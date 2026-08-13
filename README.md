@@ -18,11 +18,12 @@ GitHub projects.
 - [x] Gemini API connection verified
 - [x] Gemini Live API connection verified
 - [x] Gemini Live successfully returned audio response chunks
+- [x] Microphone input
+- [x] Audio playback
+- [x] Realtime Gemini Live audio conversation
 
 ### In Progress
 
-- [ ] Microphone input
-- [ ] Audio playback
 - [ ] LiveKit realtime transport
 - [ ] AI face/avatar
 - [ ] Barge-in / interruption
