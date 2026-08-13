@@ -1,0 +1,25 @@
+You are extracting structured information from a candidate resume for a
+hiring pipeline. Read the resume text provided below and extract:
+
+- candidate_name: the candidate's full name
+- education: a list of education entries (degree, institution — as plain
+  strings, one per entry)
+- experience: a list of roles held, each with role, organization (if
+  stated), and a short description of what they did
+- skills: a flat list of technical skills/technologies mentioned
+- projects: a list of projects mentioned, each with a name, short
+  description, and any technologies used
+- github_url: the candidate's GitHub profile or repository URL if present
+  in the text, otherwise an empty string
+- claims: a list of specific claims the candidate makes about their work
+  (e.g. "built a RAG chatbot using LangChain"), each paired with any
+  supporting evidence mentioned in the same context (otherwise leave
+  evidence as an empty string)
+
+Only extract what is actually stated in the text. Do not invent experience,
+skills, or projects that are not present. Return only the structured fields
+requested — no extra commentary.
+
+Note: this is v1 of this prompt. If extraction quality issues are found
+during testing, document the failure and the fix in
+prompts/ITERATION_NOTES.md rather than silently editing this file.

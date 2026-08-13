@@ -1,0 +1,44 @@
+{
+  "matched": [
+    {
+      "requirement": "Python",
+      "status": "matched",
+      "evidence": [
+        "github",
+        "resume"
+      ]
+    },
+    {
+      "requirement": "LangChain",
+      "status": "matched",
+      "evidence": [
+        "github",
+        "resume"
+      ]
+    },
+    {
+      "requirement": "RAG",
+      "status": "matched",
+      "evidence": [
+        "github",
+        "resume"
+      ]
+    }
+  ],
+  "missing": [
+    {
+      "requirement": "Docker",
+      "status": "missing",
+      "evidence": []
+    }
+  ],
+  "weak_unverified": [
+    {
+      "requirement": "Git",
+      "status": "weak_unverified",
+      "evidence": [
+        "resume claim only — no supporting GitHub evidence found"
+      ]
+    }
+  ]
+}

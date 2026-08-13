@@ -1,0 +1,18 @@
+{
+  "username": "example-candidate",
+  "profile_url": "https://github.com/example-candidate",
+  "repositories": [
+    {
+      "name": "rag-chatbot",
+      "description": "A RAG chatbot",
+      "languages": [
+        "Python",
+        "HTML"
+      ],
+      "readme_excerpt": "# RAG Chatbot\nBuilt with LangChain and ChromaDB.",
+      "stars": 3,
+      "last_updated": "2026-01-01T00:00:00Z",
+      "url": "https://github.com/example-candidate/rag-chatbot"
+    }
+  ]
+}

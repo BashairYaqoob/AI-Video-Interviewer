@@ -103,6 +103,20 @@ Run:
   .\.venv\Scripts\python.exe tests\generate_fixtures.py
   .\.venv\Scripts\python.exe tests\test_document_parser.py
 
+### Milestones 3B–3D — Structured extraction, GitHub ingestion, gap analysis (COMPLETE)
+
+- src/ingestion/structured_extractor.py: Gemini structured JSON extraction
+  for JD and resume (prompts in prompts/), writes output/jd.json + resume.json
+- src/ingestion/github.py: GitHub REST ingestion (repos, languages, README
+  excerpts), GITHUB_TOKEN optional, writes output/github.json
+- src/ingestion/gap_analysis.py: deterministic matching of JD requirements
+  against resume + GitHub evidence, writes output/gap_analysis.json
+
+Run:
+  .\.venv\Scripts\python.exe tests\test_structured_extractor.py
+  .\.venv\Scripts\python.exe tests\test_github.py
+  .\.venv\Scripts\python.exe tests\test_gap_analysis.py
+
 # LiveKit Console Test
 
 The following conversational behavior was successfully observed:

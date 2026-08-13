@@ -264,6 +264,19 @@ Isolated from the realtime pipeline — no LLM calls yet. This will later
 feed into separate jd_parser / resume_parser agents that call an LLM for
 structured extraction (competencies, claims, skills, links) — not built yet.
 
+## Milestones 3B–3D — Prep Pipeline (Verified Working)
+
+Normalized text (Milestone 3A)
+   ↓
+structured_extractor.py (Gemini, prompts/*.txt) --> jd.json, resume.json
+   ↓
+github.py (GitHub REST API) --> github.json
+   ↓
+gap_analysis.py (deterministic matching) --> gap_analysis.json
+
+All four output/ files are independent JSON artifacts, not yet wired into
+the realtime pipeline or a LangGraph — that's the next milestone.
+
 # Current Realtime Architecture
                  LIVEKIT CLOUD
                       │

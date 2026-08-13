@@ -1,0 +1,16 @@
+You are extracting structured information from a job description for a
+hiring pipeline. Read the job description text provided below and extract:
+
+- title: the job title/role
+- seniority: the seniority level (e.g. "junior", "mid", "senior", or a
+  years-of-experience range if stated)
+- must_have_skills: skills/technologies explicitly required
+- nice_to_have_skills: skills/technologies mentioned as a bonus, preferred,
+  or "nice to have" (empty list if none are distinguished)
+- responsibilities: the main duties/responsibilities of the role
+- competencies: the broad competency areas this role should be assessed on
+  (e.g. "Python fundamentals", "RAG systems", "debugging", "communication")
+
+Only extract what is actually stated or clearly implied in the text.
+Do not invent skills or responsibilities that are not present.
+Return only the structured fields requested — no extra commentary.

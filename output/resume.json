@@ -1,0 +1,44 @@
+{
+  "candidate_name": "Jane Candidate",
+  "education": [
+    "Computer Science student, FAST NUCES"
+  ],
+  "experience": [],
+  "skills": [
+    "LangChain",
+    "ChromaDB",
+    "Groq",
+    "Playwright",
+    "Streamlit"
+  ],
+  "projects": [
+    {
+      "name": "RAG chatbot",
+      "description": "Built a RAG chatbot using LangChain, ChromaDB, and Groq.",
+      "technologies": [
+        "LangChain",
+        "ChromaDB",
+        "Groq"
+      ]
+    },
+    {
+      "name": "AI lead generation agent",
+      "description": "Built an AI lead generation agent using Playwright and Streamlit.",
+      "technologies": [
+        "Playwright",
+        "Streamlit"
+      ]
+    }
+  ],
+  "github_url": "https://github.com/example-candidate",
+  "claims": [
+    {
+      "claim": "Built a RAG chatbot using LangChain, ChromaDB, and Groq.",
+      "evidence": ""
+    },
+    {
+      "claim": "Built an AI lead generation agent using Playwright and Streamlit.",
+      "evidence": ""
+    }
+  ]
+}

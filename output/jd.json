@@ -1,0 +1,21 @@
+{
+  "title": "Junior AI Engineer",
+  "seniority": "Junior (0-2 years experience)",
+  "must_have_skills": [
+    "Python fundamentals",
+    "LLM framework (such as LangChain or LangGraph)",
+    "RAG (chunking and retrieval quality)",
+    "Git",
+    "REST APIs",
+    "One shipped project"
+  ],
+  "nice_to_have_skills": [],
+  "responsibilities": [],
+  "competencies": [
+    "Python fundamentals",
+    "LLM frameworks",
+    "RAG systems",
+    "API development and integration",
+    "Version control (Git)"
+  ]
+}
