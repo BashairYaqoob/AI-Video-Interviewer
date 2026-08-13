@@ -236,6 +236,22 @@ during your work and how you resolved it?
 This is the first successful demonstration of the intended conversational
 behavior through the LiveKit Agent architecture.
 
+## Milestone 2 — Browser Client (Verified Working)
+
+Browser (web/index.html, livekit-client via CDN)
+   ↓ GET /token
+Token server (src/token_server.py) — mints token server-side,
+   embeds RoomAgentDispatch(agent_name="ai-interviewer")
+   ↓ token + url
+Browser connects directly to LiveKit Cloud room, publishes mic
+   ↓ (agent auto-dispatched by LiveKit on room creation)
+LiveKit Agent (src/realtime/agent.py) joins same room
+   ↓
+Gemini RealtimeModel → audio → back through room → browser <audio> element
+
+Secrets (LIVEKIT_API_SECRET, GEMINI_API_KEY) remain server-side only;
+browser only ever receives a short-lived room-scoped JWT.
+
 # Current Realtime Architecture
                  LIVEKIT CLOUD
                       │

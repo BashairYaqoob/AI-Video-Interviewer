@@ -75,6 +75,22 @@ Maintained a multi-turn conversation.
 
 This confirms that the core realtime AI interviewer path is functional.
 
+### Milestone 2 — Browser test client (COMPLETE)
+
+- src/token_server.py: local FastAPI backend, generates short-lived LiveKit
+  tokens server-side (secrets never reach the browser), attaches explicit
+  agent dispatch for "ai-interviewer" to each token, serves web/index.html
+- web/index.html: minimal browser client — Start Interview button, mic
+  publish, agent audio playback, live connection/status log
+- Verified: browser connects to a fresh LiveKit room, agent auto-joins via
+  token-embedded dispatch, two-way voice conversation confirmed through the
+  browser (not just the LiveKit Console)
+
+Run:
+  Terminal 1: .\.venv\Scripts\python.exe src\realtime\agent.py dev
+  Terminal 2: .\.venv\Scripts\python.exe -m uvicorn src.token_server:app --reload --port 8000
+  Browser:    http://localhost:8000/
+
 # LiveKit Console Test
 
 The following conversational behavior was successfully observed:
