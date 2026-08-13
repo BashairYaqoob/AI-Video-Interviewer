@@ -147,3 +147,47 @@ This provides a more appropriate foundation for:
 - interruption handling
 - connection lifecycle
 - candidate session management
+
+# CURRENT BREAKPOINT
+
+## Working
+Python environment             ✅
+requirements.txt               ✅
+Git repository                 ✅
+Gemini API                     ✅
+Gemini Live standalone test    ✅
+LiveKit CLI                    ✅
+LiveKit Cloud project          ✅
+LiveKit credentials            ✅
+Google/Gemini credential       ✅
+
+## Not built yet
+LiveKit Agent                  ⏳ NEXT
+Browser → LiveKit              ⏳
+LiveKit → Gemini               ⏳
+Two-way browser conversation   ⏳
+Avatar                         ⏳
+LangGraph                      ⏳
+JD parser                      ⏳
+Resume parser                  ⏳
+GitHub agent                   ⏳
+Question planner               ⏳
+HITL                           ⏳
+Scoring                        ⏳
+MCP                            ⏳
+Evals                          ⏳
+Reports                        ⏳
+
+Standalone Gemini Live was successfully connected and tested, including
+audio streaming, transcription, turn completion, and interruption events.
+
+However, the standalone WebSocket test eventually experienced a keepalive
+ping timeout after a completed turn. For the production realtime layer,
+the implementation therefore moves to LiveKit Cloud rather than relying
+on a custom low-level Gemini WebSocket transport.
+
+Current measured standalone Gemini Live latency:
+Not yet measured.
+
+Production LiveKit latency:
+Not yet measured.

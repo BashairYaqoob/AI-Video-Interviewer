@@ -59,3 +59,32 @@ prompts/
 evals/
 mcp_server/
 tests/
+
+## Progress
+
+### Completed
+
+- Python virtual environment configured
+- Dependencies captured in `requirements.txt`
+- Gemini API connection verified
+- Gemini Live connection verified
+- Gemini Live audio streaming tested
+- Gemini Live transcription tested
+- Gemini Live interruption events tested
+- LiveKit CLI installed
+- LiveKit Cloud project created and authenticated
+- LiveKit credentials verified locally
+
+### Current checkpoint
+
+The realtime foundation is ready to begin LiveKit Agent development.
+
+Next milestone:
+
+Browser → LiveKit Room → LiveKit Agent → Gemini → Browser audio.
+
+### Known limitation
+
+The standalone Gemini Live experiment eventually encountered a WebSocket
+keepalive timeout after a completed turn. The production realtime transport
+will therefore use LiveKit Cloud.
