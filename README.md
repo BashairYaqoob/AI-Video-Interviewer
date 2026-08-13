@@ -1,6 +1,3 @@
-
----
-
 # AI Video Interviewer
 
 An AI-powered live video interviewer that conducts evidence-grounded
@@ -11,80 +8,302 @@ GitHub projects.
 
 🚧 Hackathon build in progress.
 
-### Completed
+The realtime foundation is now working:
+
+**LiveKit Agent → Gemini Realtime → conversational interview**
+
+The next milestone is connecting a browser candidate to the LiveKit room.
+
+---
+
+## Completed
 
 - [x] Project structure initialized
 - [x] Python virtual environment configured
+- [x] Dependencies captured in `requirements.txt`
+- [x] `.gitignore` configured to protect secrets
 - [x] Gemini API connection verified
 - [x] Gemini Live API connection verified
-- [x] Gemini Live successfully returned audio response chunks
-- [x] Microphone input
-- [x] Audio playback
-- [x] Realtime Gemini Live audio conversation
+- [x] Gemini Live streamed audio successfully
+- [x] Gemini Live input transcription tested
+- [x] Gemini Live output transcription tested
+- [x] Gemini Live interruption events tested
+- [x] LiveKit CLI installed
+- [x] LiveKit Cloud project created
+- [x] LiveKit CLI authenticated
+- [x] LiveKit credentials verified locally
+- [x] LiveKit Agents installed
+- [x] LiveKit Google plugin installed
+- [x] LiveKit Agent successfully registered with LiveKit Cloud
+- [x] Gemini Realtime successfully connected through LiveKit Agent
+- [x] LiveKit Agent successfully conducted a multi-turn conversational interview
+- [x] Agent introduction and interview questioning verified
+- [x] Candidate responses successfully received and followed by Gemini responses
 
-### In Progress
+---
 
-- [ ] LiveKit realtime transport
-- [ ] AI face/avatar
-- [ ] Barge-in / interruption
-- [ ] JD parsing
-- [ ] Resume parsing
-- [ ] GitHub grounding
-- [ ] Question planning
-- [ ] LangGraph interview flow
-- [ ] HITL question-plan approval
-- [ ] Scoring and evidence validation
-- [ ] MCP server
-- [ ] Evaluations
+## Current Milestone
 
-## Running the Gemini Live Test
+### Milestone 1 — Realtime Interview Foundation
 
-### Setup
+Status: ✅ Working
 
-Create a `.env` file:
+Current architecture:
 
-```env
-GEMINI_API_KEY=your_key_here
+```text
+LiveKit Cloud
+     ↓
+LiveKit Agent
+     ↓
+Gemini Realtime
+     ↓
+AI interviewer
+     ↓
+Two-way conversational interview
 ```
-### Install dependencies:
-pip install -r requirements.txt
-### Run:
-python src/test_gemini_live.py
+The LiveKit Agent was tested through the LiveKit Console.
+
+The agent successfully:
+
+Joined the LiveKit environment.
+Connected to Gemini Realtime.
+Introduced itself as an AI interviewer.
+Asked interview questions.
+Received candidate responses.
+Continued asking relevant follow-up questions.
+Maintained a multi-turn conversation.
+
+This confirms that the core realtime AI interviewer path is functional.
+
+# LiveKit Console Test
+
+The following conversational behavior was successfully observed:
+
+AI:
+Hello. I am your AI interviewer. Today, we will conduct a
+professional job interview.
+
+Candidate:
+Yes can you tell me the first question?
+
+AI:
+Certainly. To begin, could you please provide a brief overview
+of your professional background and tell me why you are interested
+in this position?
+
+Candidate:
+Well, I have studied computer science.
+
+AI:
+That's a great foundation. Could you elaborate on your specific
+skills and any practical experience you have related to frontend
+development?
+
+Candidate:
+I've recently worked on a website.
+
+AI:
+That sounds like a valuable project. What was your specific role
+and responsibilities within the development team for that website?
+
+Candidate:
+A mental health website...
+
+AI:
+Could you describe a specific technical challenge you encountered
+during your work and how you resolved it?
+
+## Current Architecture
+                    ┌──────────────────┐
+                    │   LiveKit Cloud   │
+                    │                  │
+                    │     Room         │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  LiveKit Agent   │
+                    │                  │
+                    │ ai-interviewer   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ Gemini Realtime  │
+                    │                  │
+                    │ Google Realtime  │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    AI Interviewer
+
+### Next Milestone
+Browser → LiveKit → Agent → Gemini
+
+The next objective is to create the browser-side interview experience.
+
+## Target flow:
+
+Candidate Browser
+       │
+       │ microphone / audio
+       ▼
+LiveKit Room
+       │
+       ▼
+LiveKit Agent
+       │
+       ▼
+Gemini Realtime
+       │
+       ▼
+AI voice response
+       │
+       ▼
+Candidate Browser
+
+Only after this basic browser conversation works should we move on to:
+
+ AI face/avatar
+ JD parsing
+ Resume parsing
+ GitHub grounding
+ Question planning
+ LangGraph interview flow
+ HITL question-plan approval
+ Evidence collection
+ Scoring
+ MCP recruiter interface
+ Evaluations
+ Reports
+Gemini Live Investigation
+
+Before adopting LiveKit, Gemini Live was tested directly using the
+google-genai SDK.
+
+The standalone implementation successfully demonstrated:
+
+microphone capture
+realtime audio input
+streamed Gemini audio output
+input transcription
+output transcription
+turn completion
+interruption events
+
+However, the standalone WebSocket implementation eventually encountered:
+
+1011 internal error
+keepalive ping timeout; no close frame was received
+
+Because the hackathon requires a reliable realtime conversational layer,
+the production architecture was changed to use LiveKit Agents rather than
+maintaining a custom low-level Gemini WebSocket transport.
+
+This was a deliberate architectural decision.
+
+## Environment
+
+The following realtime credentials are configured locally:
+
+GEMINI_API_KEY
+GOOGLE_API_KEY
+LIVEKIT_URL
+LIVEKIT_API_KEY
+LIVEKIT_API_SECRET
+
+GOOGLE_API_KEY and GEMINI_API_KEY intentionally contain the same
+Gemini API credential.
+
+The following are reserved for later stages:
+
+AVATAR_API_KEY
+GITHUB_TOKEN
+
+Secrets must never be committed to Git.
 
 ## Project Structure
-src/
-inputs/
-output/
-prompts/
-evals/
-mcp_server/
-tests/
+AI_Video_Interviewer/
+│
+├── .env
+├── .env.example
+├── .gitignore
+├── Readme.md
+├── Architecture.md
+├── requirements.txt
+│
+├── src/
+│   ├── test_gemini.py
+│   ├── test_gemini_live.py
+│   ├── test_gemini_live_text.py
+│   │
+│   └── realtime/
+│       └── agent.py
+│
+├── inputs/
+├── output/
+├── prompts/
+├── evals/
+├── mcp_server/
+└── tests/
 
 ## Progress
+| Component                         | Status |
+| --------------------------------- | ------ |
+| Python environment                | ✅      |
+| Requirements                      | ✅      |
+| Git repository                    | ✅      |
+| Gemini API                        | ✅      |
+| Gemini Live standalone            | ✅      |
+| LiveKit CLI                       | ✅      |
+| LiveKit Cloud                     | ✅      |
+| LiveKit credentials               | ✅      |
+| LiveKit Agents                    | ✅      |
+| Google LiveKit plugin             | ✅      |
+| LiveKit Agent registration        | ✅      |
+| Gemini Realtime through LiveKit   | ✅      |
+| Multi-turn interview conversation | ✅      |
+| Browser client                    | ⏳      |
+| Avatar                            | ⏳      |
+| JD grounding                      | ⏳      |
+| Resume grounding                  | ⏳      |
+| GitHub grounding                  | ⏳      |
+| Interview planner                 | ⏳      |
+| LangGraph                         | ⏳      |
+| HITL                              | ⏳      |
+| Scoring                           | ⏳      |
+| MCP                               | ⏳      |
+| Evaluations                       | ⏳      |
+| Reports                           | ⏳      |
 
-### Completed
+## Known Limitations
 
-- Python virtual environment configured
-- Dependencies captured in `requirements.txt`
-- Gemini API connection verified
-- Gemini Live connection verified
-- Gemini Live audio streaming tested
-- Gemini Live transcription tested
-- Gemini Live interruption events tested
-- LiveKit CLI installed
-- LiveKit Cloud project created and authenticated
-- LiveKit credentials verified locally
+The current LiveKit test was performed through the LiveKit Console.
 
-### Current checkpoint
+The browser candidate interface has not yet been implemented.
 
-The realtime foundation is ready to begin LiveKit Agent development.
+Avatar/video presentation has not yet been implemented.
 
-Next milestone:
+Candidate-specific grounding using JD, resume, and GitHub data has not
+yet been implemented.
 
-Browser → LiveKit Room → LiveKit Agent → Gemini → Browser audio.
+Interview scoring and evidence extraction have not yet been implemented.
 
-### Known limitation
+## Current Breakpoint
+Working
+Python environment             ✅
+requirements.txt               ✅
+Git repository                 ✅
+Gemini API                     ✅
+Gemini Live standalone test    ✅
+LiveKit CLI                    ✅
+LiveKit Cloud                  ✅
+LiveKit credentials            ✅
+LiveKit Agents                 ✅
+Gemini Realtime via LiveKit    ✅
+Multi-turn AI interview       ✅
+Next
+Browser → LiveKit Room → LiveKit Agent → Gemini → Browser audio
 
-The standalone Gemini Live experiment eventually encountered a WebSocket
-keepalive timeout after a completed turn. The production realtime transport
-will therefore use LiveKit Cloud.
+Do not begin avatar, LangGraph, GitHub, scoring, or MCP work until the
+browser realtime path is working.

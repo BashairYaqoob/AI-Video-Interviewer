@@ -1,0 +1,10 @@
+[project]
+name = "ai-video-interviewer"
+version = "0.1.0"
+description = "AI Video Interviewer hackathon project"
+requires-python = ">=3.12"
+dependencies = [
+    "livekit-agents==1.6.10",
+    "livekit-plugins-google==1.6.10",
+    "python-dotenv",
+]
