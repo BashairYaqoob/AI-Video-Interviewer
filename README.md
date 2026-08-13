@@ -91,6 +91,18 @@ Run:
   Terminal 2: .\.venv\Scripts\python.exe -m uvicorn src.token_server:app --reload --port 8000
   Browser:    http://localhost:8000/
 
+### ### Milestone 3A — JD + Resume ingestion (COMPLETE)
+
+- src/ingestion/document_parser.py: parses .txt, .md, .pdf, .docx into a
+  normalized ParsedDocument (doc_type, filename, source_format, text,
+  char_count). No LLM calls, no realtime pipeline involved.
+- tests/generate_fixtures.py + tests/test_document_parser.py: prove
+  input document -> parser -> normalized text for all 4 formats
+
+Run:
+  .\.venv\Scripts\python.exe tests\generate_fixtures.py
+  .\.venv\Scripts\python.exe tests\test_document_parser.py
+
 # LiveKit Console Test
 
 The following conversational behavior was successfully observed:

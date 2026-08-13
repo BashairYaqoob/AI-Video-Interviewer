@@ -252,6 +252,18 @@ Gemini RealtimeModel → audio → back through room → browser <audio> element
 Secrets (LIVEKIT_API_SECRET, GEMINI_API_KEY) remain server-side only;
 browser only ever receives a short-lived room-scoped JWT.
 
+## Milestone 3A — Document Ingestion (Verified Working)
+
+Input file (.txt / .md / .pdf / .docx)
+   ↓
+parse_document() [src/ingestion/document_parser.py]
+   ↓
+ParsedDocument { doc_type, filename, source_format, text, char_count }
+
+Isolated from the realtime pipeline — no LLM calls yet. This will later
+feed into separate jd_parser / resume_parser agents that call an LLM for
+structured extraction (competencies, claims, skills, links) — not built yet.
+
 # Current Realtime Architecture
                  LIVEKIT CLOUD
                       │
