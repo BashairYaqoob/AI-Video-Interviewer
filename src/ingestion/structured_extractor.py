@@ -19,8 +19,10 @@ from src.ingestion.schemas import JobDescription, Resume
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-MODEL_NAME = os.getenv("GEMINI_TEXT_MODEL", "gemini-flash-latest")
-
+MODEL_NAME = os.getenv(
+    "GEMINI_TEXT_MODEL",
+    "gemini-3.5-flash-lite",
+)
 PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "output"
 

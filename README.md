@@ -142,6 +142,23 @@ Run:
   .\.venv\Scripts\python.exe tests\test_answer_analysis_schema.py
   .\.venv\Scripts\python.exe tests\test_interview_graph.py
 
+### Milestone 5 — Live interview wired to LangGraph (COMPLETE / IN PROGRESS)
+
+- scripts/run_prep_pipeline.py: runs the full offline prep pipeline against
+  real inputs/jd.<ext> + inputs/resume.<ext>, producing all output/*.json
+  artifacts needed for a live interview
+- src/realtime/agent.py: now loads those artifacts, builds InterviewState,
+  compiles the interview graph, and drives the live Gemini voice session
+  via manual turn control — every agent utterance is explicitly decided
+  by the LangGraph (next question / follow-up / closing), not by Gemini
+  free-responding
+
+Run:
+  1. .\.venv\Scripts\python.exe scripts\run_prep_pipeline.py
+  2. .\.venv\Scripts\python.exe src\realtime\agent.py dev
+  3. .\.venv\Scripts\python.exe -m uvicorn src.token_server:app --reload --port 8000
+  4. Browser: http://localhost:8000/
+
 # LiveKit Console Test
 
 The following conversational behavior was successfully observed:

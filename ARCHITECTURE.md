@@ -300,6 +300,23 @@ is the same mechanism planned for the HITL recruiter-approval gate later.
 Scope: interview control + evidence collection only. No final competency
 scoring yet. Not yet connected to the live LiveKit/Gemini voice pipeline.
 
+## Milestone 5 — Live Interview Integration (Verified Working)
+
+output/{jd,resume,github,gap_analysis,interview_plan}.json (Milestone 3-4)
+   ↓
+agent.py: InterviewState seeded, interview graph compiled (in-memory
+checkpointer — SQLite swap is Milestone 6)
+   ↓
+AgentSession(llm=Gemini RealtimeModel, turn_detection="manual")
+   ↓
+Loop: user_input_transcribed (final) -> commit_user_turn()
+   -> graph.invoke(Command(resume=transcript))
+   -> graph decides: follow-up | next question | closing
+   -> generate_reply(instructions="ask exactly: <question>")
+
+Manual turn control ensures every agent utterance is graph-driven, not
+Gemini free-responding off static instructions.
+
 # Current Realtime Architecture
                  LIVEKIT CLOUD
                       │

@@ -1,0 +1,69 @@
+{
+  "introduction": "Welcome Bashair, thank you for joining us today. We are excited to discuss your background in building AI agents, your hands-on experience with Python and LLM frameworks, and dive into some of your specific open-source projects.",
+  "questions": [
+    {
+      "question_id": "q1",
+      "text": "To start off, could you walk us through the high-level architecture of your Whatsapp-Langchain-Bot project and how you integrated LangChain with the Baileys WhatsApp client?",
+      "competency": "Ability to ship working projects",
+      "evidence_sought": "Clear explanation of the end-to-end flow from receiving incoming WhatsApp messages to processing them via LangChain and returning a response.",
+      "difficulty": "easy",
+      "question_type": "resume",
+      "follow_up_strategy": "Ask how connection stability and session persistence were handled when Baileys reconnects."
+    },
+    {
+      "question_id": "q2",
+      "text": "In your CarWash_Voice_Agent project, you designed a shared FastAPI backend serving Vapi and Uplift AI voice agents. How did you design your REST API routes and data schemas to handle booking state and conversational webhooks reliably?",
+      "competency": "REST APIs",
+      "evidence_sought": "Demonstrates practical knowledge of RESTful design, Pydantic validation, webhook processing, and asynchronous request handling in FastAPI.",
+      "difficulty": "medium",
+      "question_type": "github",
+      "follow_up_strategy": "Ask how concurrent incoming webhook requests from multiple callers are handled without race conditions during slot booking."
+    },
+    {
+      "question_id": "q3",
+      "text": "In your Whatsapp-Langchain-Bot repo, you used a local Chroma vector store for RAG alongside per-user memory. Could you detail your indexing pipeline—specifically your chunking strategy, embedding selection, and how you prevent hallucination during retrieval?",
+      "competency": "Retrieval-Augmented Generation (RAG)",
+      "evidence_sought": "Specific technical reasoning on chunk sizes, overlap, retrieval metrics (e.g., top-k, similarity thresholds), and prompt conditioning on retrieved context.",
+      "difficulty": "medium",
+      "question_type": "gap_probe",
+      "follow_up_strategy": "Probe how Chroma query results are filtered when domain documents change or expand."
+    },
+    {
+      "question_id": "q4",
+      "text": "In your AI-Season repository, you explored Agentic AI with LangGraph and LangChain. How do you design state schemas, conditional edges, and cyclical loops in LangGraph, and what advantages does LangGraph provide over standard linear LangChain chains?",
+      "competency": "LangGraph",
+      "evidence_sought": "Detailed understanding of LangGraph state objects, node functions, edge routing, and managing multi-step agent execution cycles.",
+      "difficulty": "hard",
+      "question_type": "core_competency",
+      "follow_up_strategy": "Ask how error handling and loop termination (preventing infinite agent cycles) are implemented in their LangGraph workflows."
+    },
+    {
+      "question_id": "q5",
+      "text": "In your Lead-Generation-Agent repository, you parse natural language queries to drive browser automation on Google Maps. How did you decompose the prompt into structured search entities, and how did your system recover when the browser automation encountered unexpected UI changes or missing contact emails?",
+      "competency": "Problem decomposition",
+      "evidence_sought": "Structured approach to prompt extraction (e.g. structured output/function calling) combined with defensive scraping error-handling and fallback logic.",
+      "difficulty": "medium",
+      "question_type": "github",
+      "follow_up_strategy": "Ask what strategies they used to avoid rate-limiting or IP blocking during automated map scraping."
+    },
+    {
+      "question_id": "q6",
+      "text": "When building production applications with LLM frameworks, how do you handle model provider fallbacks, token budget monitoring, and enforcing structured JSON outputs from open-source LLMs like the Groq OSS models you used?",
+      "competency": "Technical depth",
+      "evidence_sought": "Understanding of JSON schema validation, provider abstraction layers, fallback handlers, and token management strategies in Python LLM applications.",
+      "difficulty": "hard",
+      "question_type": "gap_probe",
+      "follow_up_strategy": "Ask how they handle cases where the LLM produces malformed JSON despite explicit instructions."
+    },
+    {
+      "question_id": "q7",
+      "text": "In your AI-Video-Interviewer hackathon project involving LiveKit and Gemini Realtime, what was the most difficult real-time synchronization or streaming bug you encountered, and how did you diagnose and resolve it under time pressure?",
+      "competency": "Debugging and problem-solving ability",
+      "evidence_sought": "A clear STAR-format example showing structured debugging of asynchronous/realtime audio-video streams, root cause analysis, and practical delivery under constraints.",
+      "difficulty": "medium",
+      "question_type": "behavioral",
+      "follow_up_strategy": "Ask what trade-offs were made to get the prototype functioning in time for the hackathon."
+    }
+  ],
+  "closing": "Thank you for sharing such detailed insights into your projects and engineering approaches, Bashair. Do you have any questions for us about the role, our current AI stack, or the engineering team?"
+}

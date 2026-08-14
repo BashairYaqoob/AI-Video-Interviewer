@@ -1,0 +1,36 @@
+Junior AI Engineer
+
+Company: Northwind Labs
+Location: Karachi
+Experience: 0–2 years
+
+About the Role
+
+Northwind Labs is looking for a Junior AI Engineer to help build and
+prototype practical AI-powered applications. The ideal candidate should
+have strong Python fundamentals, familiarity with modern LLM frameworks,
+and an understanding of retrieval-augmented generation systems.
+
+Requirements
+
+- Strong Python fundamentals.
+- Familiarity with at least one LLM framework, such as LangChain or
+  LangGraph.
+- Understanding of Retrieval-Augmented Generation (RAG), including
+  chunking, embeddings, retrieval, and retrieval quality.
+- Familiarity with Git and REST APIs.
+- At least one shipped or completed project that can be explained
+  end to end, including the problem, architecture, implementation,
+  challenges, and outcome.
+
+What We Assess
+
+- Technical depth
+- Problem decomposition
+- Ability to ship working projects
+- Debugging and problem-solving ability
+- Communication
+
+The role is suitable for candidates with 0–2 years of experience,
+including strong students, recent graduates, and candidates with
+substantial project-based experience.
