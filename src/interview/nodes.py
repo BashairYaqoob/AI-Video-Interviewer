@@ -72,13 +72,30 @@ def ask_follow_up_node(state: InterviewState) -> dict:
     Turns the most recent evidence analysis's suggested follow-up
     direction into a new question, appended to questions_asked, and
     increments the follow-up counter (capped elsewhere, in router.py).
+
+    In realtime_mode, routing to this node happens via route_immediate
+    (router.py), which decides BEFORE the Gemini-based evidence analysis
+    for the current answer has run (that analysis is backgrounded — see
+    src/realtime/agent.py). So evidence_collected may not yet contain a
+    record for last_question, or may still hold a stale record from an
+    earlier question. Only use it when it actually matches; otherwise
+    fall back to a generic probe rather than reusing a mismatched
+    suggestion.
     """
-    last_evidence = state.evidence_collected[-1]
     last_question = state.questions_asked[-1]
+
+    follow_up_text = "Could you elaborate further on that?"
+    if state.evidence_collected:
+        last_evidence = state.evidence_collected[-1]
+        if (
+            last_evidence.question_id == last_question.question_id
+            and last_evidence.suggested_follow_up_direction
+        ):
+            follow_up_text = last_evidence.suggested_follow_up_direction
 
     follow_up_question = QuestionRecord(
         question_id=f"{last_question.question_id}-followup-{state.follow_up_count + 1}",
-        text=last_evidence.suggested_follow_up_direction or "Could you elaborate further on that?",
+        text=follow_up_text,
         competency=last_question.competency,
         evidence_sought=last_question.evidence_sought,
         difficulty=last_question.difficulty,
