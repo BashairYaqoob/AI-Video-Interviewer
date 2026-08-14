@@ -277,6 +277,29 @@ gap_analysis.py (deterministic matching) --> gap_analysis.json
 All four output/ files are independent JSON artifacts, not yet wired into
 the realtime pipeline or a LangGraph — that's the next milestone.
 
+## Milestone 4 — Interview Intelligence Layer (Verified Working)
+
+jd.json + resume.json + github.json + gap_analysis.json (Milestone 3)
+   ↓
+question_planner.py (Gemini) --> InterviewPlan
+   ↓
+InterviewState (Pydantic) seeded with plan + JD/resume/GitHub/gap context
+   ↓
+LangGraph (graph.py):
+  intro -> ask_question -> receive_answer [interrupt: pause for answer]
+    -> analyze_answer (answer_analysis.py, Gemini)
+    -> route_after_analysis:
+         follow_up_warranted & under cap -> ask_follow_up -> receive_answer (loop)
+         more questions remain           -> advance_question -> ask_question (loop)
+         plan exhausted                  -> closing -> END
+
+Checkpointer: in-memory (MemorySaver) for now. Graph pauses genuinely
+between questions/follow-ups via interrupt()/Command(resume=...) — this
+is the same mechanism planned for the HITL recruiter-approval gate later.
+
+Scope: interview control + evidence collection only. No final competency
+scoring yet. Not yet connected to the live LiveKit/Gemini voice pipeline.
+
 # Current Realtime Architecture
                  LIVEKIT CLOUD
                       │

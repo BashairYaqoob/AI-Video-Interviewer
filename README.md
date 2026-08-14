@@ -117,6 +117,31 @@ Run:
   .\.venv\Scripts\python.exe tests\test_github.py
   .\.venv\Scripts\python.exe tests\test_gap_analysis.py
 
+### Milestone 4 — Interview Intelligence Layer (COMPLETE)
+
+- src/interview/state.py: InterviewState (Pydantic) — candidate/role context,
+  JD/resume/GitHub/gap-analysis, live progress, collected evidence
+- src/interview/question_planner.py: Gemini-based InterviewPlan generation
+  from JD+resume+GitHub+gap analysis (prompts/question_planner_v1.txt)
+- src/interview/answer_analysis.py: Gemini-based per-answer evidence
+  extraction, not scoring (prompts/answer_analysis_v1.txt)
+- src/interview/graph.py + nodes.py + router.py: LangGraph interview flow
+  — intro -> ask_question -> receive_answer (pauses via interrupt()) ->
+  analyze_answer -> follow_up (capped) | advance | closing
+- Verified: deterministic graph routing (fake analyzer, no live Gemini
+  calls) for both the "clean advance to completion" and "follow-up
+  triggered then resolved" paths
+
+Not yet wired to the live realtime agent — this graph is standalone and
+tested independently for now. Uses an in-memory checkpointer; will switch
+to SQLite when integrated with the live call.
+
+Run:
+  .\.venv\Scripts\python.exe tests\test_interview_state.py
+  .\.venv\Scripts\python.exe tests\test_question_plan_schema.py
+  .\.venv\Scripts\python.exe tests\test_answer_analysis_schema.py
+  .\.venv\Scripts\python.exe tests\test_interview_graph.py
+
 # LiveKit Console Test
 
 The following conversational behavior was successfully observed:
