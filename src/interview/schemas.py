@@ -1,10 +1,13 @@
 """
 schemas.py
 
-Pydantic schemas for the interview intelligence layer (Milestones 4A-4D).
+Pydantic schemas for the interview intelligence layer (Milestones 4A-4D,
+extended in Milestone 6 with HITL records).
 """
 
+from enum import Enum
 from typing import List
+
 from pydantic import BaseModel, Field
 
 
@@ -28,6 +31,11 @@ class InterviewPlan(BaseModel):
 class AnswerRecord(BaseModel):
     question_id: str
     text: str
+    # Milestone 6: set when this "answer" was actually a HITL skip
+    # (see nodes.receive_answer_node / router.py) rather than something
+    # the candidate said. Routers must not run follow-up logic on a
+    # skipped answer.
+    skipped: bool = False
 
 
 class EvidenceRecord(BaseModel):
@@ -38,3 +46,26 @@ class EvidenceRecord(BaseModel):
     missing_evidence: List[str] = Field(default_factory=list)
     follow_up_warranted: bool
     suggested_follow_up_direction: str = ""
+
+
+# --- Milestone 6: HITL (human-in-the-loop) records ---------------------
+
+class HITLStatus(str, Enum):
+    RUNNING = "running"
+    PAUSED = "paused"
+    TERMINATED = "terminated"
+
+
+class HITLActionRecord(BaseModel):
+    """One durable, audit-log entry for a recruiter control action."""
+    action: str  # "pause" | "resume" | "skip" | "override_question" | "terminate"
+    actor: str = "recruiter"
+    timestamp: float
+    note: str = ""
+
+
+# Sentinel key used to resume a paused `interrupt()` in receive_answer_node
+# with a HITL "skip this question" instruction instead of a real candidate
+# answer. Shared between nodes.py (consumer) and hitl.py (producer) so
+# there is exactly one definition of what a "skip" resume value looks like.
+HITL_SKIP_SENTINEL_KEY = "__hitl_skip__"

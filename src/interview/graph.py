@@ -2,18 +2,23 @@
 graph.py
 
 Milestone 4C — LangGraph interview state machine.
+Milestone 6 — no structural changes here; see checkpointer.py, hitl.py,
+and src/realtime/agent.py for the SQLite persistence / HITL / resume work.
 
 Flow: intro -> ask_question -> receive_answer (pauses/interrupts) ->
 analyze_answer -> [follow_up loop | advance to next question | closing].
 
 This graph controls interview flow and evidence collection ONLY — it does
-not score the candidate (later milestone), and it is not yet wired into
-the live realtime agent (also later — this is deliberately standalone and
-testable for now).
+not score the candidate (later milestone).
 
-Uses an in-memory checkpointer for now (MemorySaver). The brief requires
-a SQLite checkpointer for real dropped-call resume — that swap happens
-when this graph is integrated with the live agent, not in this milestone.
+Checkpointer: defaults to an in-memory MemorySaver, which is what the
+synchronous test suite (test_interview_graph.py) uses via
+graph.invoke()/graph.get_state(). The live realtime agent
+(src/realtime/agent.py) instead passes in an AsyncSqliteSaver (see
+checkpointer.py) for real persistence and dropped-call resume, and drives
+the graph with the async API (ainvoke/aget_state/aupdate_state) —
+AsyncSqliteSaver does not implement the sync checkpointer interface, so
+mixing it with graph.invoke() will raise.
 """
 
 from functools import partial
@@ -45,7 +50,12 @@ def build_interview_graph(analyzer=None, checkpointer=None, realtime_mode=False)
                   analyzer. Tests should pass a fake/deterministic function.
                   Ignored when realtime_mode=True (see below).
         checkpointer: LangGraph checkpointer. Defaults to an in-memory
-                      MemorySaver (fine for tests/local dev).
+                      MemorySaver (fine for tests/local dev). Pass an
+                      AsyncSqliteSaver (see checkpointer.py) for the live
+                      realtime agent so state persists across process
+                      restarts / dropped calls; if you do, drive the
+                      compiled graph with ainvoke/aget_state/aupdate_state,
+                      not the sync invoke()/get_state()/update_state().
         realtime_mode: When False (default), preserves the ORIGINAL
             synchronous flow this graph has always had:
                 receive_answer -> analyze_answer (Gemini call) ->
@@ -63,7 +73,7 @@ def build_interview_graph(analyzer=None, checkpointer=None, realtime_mode=False)
             the compiled graph at all — the caller is responsible for
             running answer_analysis.analyze_answer in the background and
             persisting results into evidence_collected via
-            graph.update_state(). See src/realtime/agent.py.
+            graph.aupdate_state(). See src/realtime/agent.py.
     """
     analyzer_fn = analyzer or default_analyzer
     checkpointer = checkpointer if checkpointer is not None else MemorySaver()

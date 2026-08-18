@@ -317,6 +317,126 @@ Loop: user_input_transcribed (final) -> commit_user_turn()
 Manual turn control ensures every agent utterance is graph-driven, not
 Gemini free-responding off static instructions.
 
+# Milestone 6 addendum — persistence, HITL, resume/recovery
+
+(Merge the relevant parts of this into your existing ARCHITECTURE.md —
+this is written as a standalone addendum since I only had the individual
+source files, not the full document, to edit in place.)
+
+## What changed
+
+- `MemorySaver` → `AsyncSqliteSaver` (`src/interview/checkpointer.py`) on
+  the realtime path only. The synchronous test suite / default
+  `build_interview_graph()` behavior is unchanged (still `MemorySaver`,
+  still `.invoke()`/`.get_state()`).
+- `src/realtime/agent.py` now drives the graph entirely through the
+  async API (`ainvoke`/`aget_state`/`aupdate_state`) instead of
+  `asyncio.to_thread`-wrapping the synchronous one. Only
+  `answer_analysis.analyze_answer()` itself (the actual Gemini call)
+  still runs via `asyncio.to_thread` — that part is intentionally
+  unchanged from Milestone 5.
+- Durable thread IDs (`_derive_thread_id`) replace the previous random
+  `uuid.uuid4()` per process start, so a reconnect can compute the same
+  `thread_id` and find existing checkpointed state.
+- HITL (`src/interview/hitl.py`) is implemented as an external
+  control-plane layer over the checkpointed state, not as new graph
+  nodes/edges — the graph structure from Milestone 4C is unchanged.
+- A single `asyncio.Lock` (`state_lock` in `agent.py`) serializes every
+  writer to a given interview's state: the main advance-the-graph flow,
+  background evidence analysis, and all HITL actions.
+- Fixed the `awaiting_answer`/`processing_answer` closure-shadowing bug
+  (see the comment block above their declaration in `agent.py`).
+
+## Design decisions worth defending in the viva
+
+**HITL as control-plane state, not graph nodes.** Pause/resume/skip/
+override/terminate all read or write `InterviewState` fields directly
+via `aupdate_state`, rather than being represented as LangGraph nodes.
+The graph already has a natural pause point (the `receive_answer`
+`interrupt()`); HITL actions are things that happen *while* the graph is
+sitting at that pause point, not new transitions through it. This keeps
+the graph's node/edge count and structure identical to Milestone 4C and
+avoids fighting LangGraph's interrupt/resume semantics with parallel
+control edges.
+
+**One coarse-grained lock, not per-field locking.** All state writers
+for one interview thread share a single `asyncio.Lock`. This is
+correct but conservative — it serializes background evidence writes,
+HITL actions, and graph advances even when, in principle, some of them
+touch disjoint fields. Given that a live interview is fundamentally
+sequential (one question in flight at a time) and HITL actions are rare,
+human-triggered events, the actual contention this lock introduces is
+negligible; the alternative (per-field optimistic locking / CAS against
+the checkpointer) was judged not worth the complexity for the amount of
+real concurrency here.
+
+**HITL skip is modeled as a real answer, not a graph bypass.** A skip
+resumes the `receive_answer` interrupt with a sentinel value
+(`{"__hitl_skip__": True}`) that `receive_answer_node` turns into a real
+`AnswerRecord(skipped=True)`. This means skips show up in the transcript
+and are auditable, and both routers (`route_after_analysis`,
+`route_immediate`) explicitly check `answer.skipped` before applying any
+follow-up logic.
+
+**Override affects content, not position.** `hitl_override_question`
+replaces *what* is asked next; it does not touch `current_question_index`
+or the underlying `interview_plan`. The plan still advances normally
+afterward. This was a deliberate simplification — inserting an
+out-of-plan question without disturbing "how far through the plan are
+we" bookkeeping.
+
+## Latency
+
+Not independently re-measured in this milestone — the realtime
+voice/turn-taking path (Gemini Realtime, VAD, endpointing) is unchanged
+from Milestone 5. The only latency-relevant change is that state I/O
+around each turn now hits a real SQLite file (via `aiosqlite`/
+`AsyncSqliteSaver`) instead of an in-memory dict. This should be small
+(local disk, small rows) but has not been measured — re-run your
+existing latency measurement methodology from Milestone 5 and update the
+number in ARCHITECTURE.md; don't assume it's unchanged.
+
+## Known limitations / risks (state these honestly rather than hide them)
+
+1. **`langgraph-checkpoint-sqlite` API surface was not verified against
+   your installed version.** This was written in an environment with no
+   package registry access, so `AsyncSqliteSaver.from_conn_string(...)`
+   / the optional `.setup()` call in `checkpointer.py` could not be
+   executed against your actual installed version. If it raises an
+   `ImportError`/`AttributeError`, check `pip show
+   langgraph-checkpoint-sqlite` and adjust.
+2. **Pause does not buffer a mid-flight transcript.** If a candidate's
+   answer transcript arrives in the brief window between a pause taking
+   effect and the recruiter resuming, that transcript is dropped, not
+   queued for replay. The candidate would need to repeat their answer
+   after resume.
+3. **The in-process HITL "paused" mirror (`hitl_mirror`) only stays in
+   sync with actions taken through this same process's `handle_pause`/
+   `handle_resume`.** If a future external control channel (MCP tool in
+   a separate process, admin API, etc.) writes `hitl_status` directly
+   against the same SQLite file, this process won't see it until the
+   next local HITL call or an explicit re-read. Wiring the actual
+   external control channel is out of scope for this milestone —
+   `handle_pause`/`handle_resume`/`handle_skip`/
+   `handle_override_question`/`handle_terminate` in `agent.py` are the
+   intended integration points for whatever transport you choose next.
+4. **The realtime local follow-up heuristic (`route_immediate`) is
+   still a no-op beyond "advance or close"** — `MIN_ANSWER_WORDS_BEFORE_FOLLOWUP`
+   remains unused, same as before this milestone. Not a regression, but
+   also not fixed here; it's a pre-existing gap, noted for completeness.
+5. **The last-resort thread_id fallback (candidate name + role hash)
+   can collide** for two different interviews of the same candidate for
+   the same role on the same day, if neither job metadata nor a stable
+   room name is available. Pass a real scheduling-system interview ID
+   via job metadata in production to avoid relying on this branch.
+6. **Tests could not be executed in the environment they were written
+   in** (no `langgraph`/`livekit-agents`/`langgraph-checkpoint-sqlite`
+   installed, no network access to install them). They were written to
+   mirror the exact conventions and assertions of the pre-existing
+   `test_interview_graph.py` and reviewed carefully by hand, but you
+   should run them yourself before trusting them — see the commands
+   below.
+
 # Current Realtime Architecture
                  LIVEKIT CLOUD
                       │

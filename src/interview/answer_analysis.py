@@ -19,6 +19,7 @@ from google import genai
 
 from src.interview.schemas import QuestionRecord, AnswerRecord, EvidenceRecord
 from src.ingestion.schemas import JobDescription, Resume, GitHubEvidence
+from google.genai import errors as genai_errors
 
 load_dotenv()
 
@@ -36,6 +37,13 @@ PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
 MAX_ANALYSIS_ATTEMPTS = 2
 RETRY_BACKOFF_SECONDS = 1.5
 
+class AnswerAnalysisUnavailable(Exception):
+    """Raised when Gemini answer analysis fails for a transient, retryable
+    reason (rate limit, server overload, timeout) rather than a bug in our
+    own code. The background analysis task in src/realtime/agent.py
+    catches this separately so a busy/rate-limited Gemini just means that
+    turn's evidence is missing from the final report, not a crashed task."""
+    pass
 
 class AnswerAnalysisUnavailable(RuntimeError):
     """Raised when Gemini answer analysis fails after retries. Callers
@@ -88,15 +96,11 @@ def analyze_answer(
                     "response_schema": EvidenceRecord,
                 },
             )
-            return response.parsed
-        except Exception as exc:  # e.g. 503 UNAVAILABLE, 429 rate limit, timeout
-            last_error = exc
-            logger.warning(
-                "answer analysis attempt %d/%d failed for question %s: %s",
-                attempt, MAX_ANALYSIS_ATTEMPTS, question.question_id, exc,
-            )
-            if attempt < MAX_ANALYSIS_ATTEMPTS:
-                time.sleep(RETRY_BACKOFF_SECONDS)
+        except genai_errors.APIError as exc:
+            raise AnswerAnalysisUnavailable(str(exc)) from exc
+        except TimeoutError as exc:
+            raise AnswerAnalysisUnavailable(str(exc)) from exc
+        return response.parsed
 
     raise AnswerAnalysisUnavailable(
         f"answer analysis failed after {MAX_ANALYSIS_ATTEMPTS} attempts for "

@@ -1,7 +1,8 @@
 """
 nodes.py
 
-LangGraph node functions for the interview state machine (Milestone 4C).
+LangGraph node functions for the interview state machine (Milestone 4C,
+extended in Milestone 6 for HITL override/skip).
 
 Each node takes the current InterviewState (a validated Pydantic instance)
 and returns a dict of fields to update. Kept explicit and simple for viva
@@ -12,7 +13,7 @@ no scoring.
 from langgraph.types import interrupt
 
 from src.interview.state import InterviewState, InterviewPhase
-from src.interview.schemas import QuestionRecord, AnswerRecord
+from src.interview.schemas import QuestionRecord, AnswerRecord, HITL_SKIP_SENTINEL_KEY
 
 
 def intro_node(state: InterviewState) -> dict:
@@ -27,8 +28,24 @@ def ask_question_node(state: InterviewState) -> dict:
     """
     Selects the current question from the interview plan and records it
     as asked. This node is about interview control/state only — actually
-    speaking the question is the (not-yet-built) realtime layer's job.
+    speaking the question is the realtime layer's job.
+
+    Milestone 6 (HITL): if a recruiter has set hitl_override_question
+    (via HITLController.override_next_question — see src/interview/hitl.py),
+    that question is asked INSTEAD of interview_plan[current_question_index]
+    for this turn, and the override is cleared immediately after use so it
+    only ever applies once. current_question_index is untouched by an
+    override — it still tracks position in the original plan, so
+    advance_question_node continues to move through the plan normally on
+    the following turn.
     """
+    if state.hitl_override_question is not None:
+        question = state.hitl_override_question
+        return {
+            "questions_asked": state.questions_asked + [question],
+            "hitl_override_question": None,
+        }
+
     question = state.interview_plan[state.current_question_index]
     return {"questions_asked": state.questions_asked + [question]}
 
@@ -37,12 +54,28 @@ def receive_answer_node(state: InterviewState) -> dict:
     """
     Pauses graph execution and waits for the candidate's answer to the
     most recently asked question. Resumed with Command(resume="...") —
-    in tests, by the test itself; later, this is where a live transcript
-    turn will resume the graph.
+    in tests, by the test itself; live, by a transcript turn; or, for a
+    HITL skip, by Command(resume={HITL_SKIP_SENTINEL_KEY: True}) (see
+    HITLController.skip_current_question in src/interview/hitl.py).
+
+    A skip is recorded as a real AnswerRecord with skipped=True and
+    empty/placeholder text, rather than being silently dropped, so the
+    transcript and evidence trail both show what actually happened.
+    Routers (router.py) must check answer.skipped and bypass follow-up
+    logic for it.
     """
     current_question = state.questions_asked[-1]
-    answer_text = interrupt({"awaiting_answer_for_question_id": current_question.question_id})
-    answer = AnswerRecord(question_id=current_question.question_id, text=answer_text)
+    resume_value = interrupt({"awaiting_answer_for_question_id": current_question.question_id})
+
+    if isinstance(resume_value, dict) and resume_value.get(HITL_SKIP_SENTINEL_KEY):
+        answer = AnswerRecord(
+            question_id=current_question.question_id,
+            text="[skipped by recruiter]",
+            skipped=True,
+        )
+    else:
+        answer = AnswerRecord(question_id=current_question.question_id, text=resume_value)
+
     return {"candidate_answers": state.candidate_answers + [answer]}
 
 
@@ -51,9 +84,16 @@ def analyze_answer_node(state: InterviewState, analyzer) -> dict:
     Runs answer analysis (Milestone 4D) on the most recent question/answer
     pair. `analyzer` is injected by the graph builder so tests can supply
     a fake, deterministic analyzer instead of calling Gemini.
+
+    A skipped answer (HITL) is never sent to the analyzer — there is
+    nothing to evaluate, and the router bypasses this node's output for
+    skipped turns anyway (see router.route_after_analysis).
     """
     question = state.questions_asked[-1]
     answer = state.candidate_answers[-1]
+
+    if answer.skipped:
+        return {}
 
     evidence = analyzer(
         question=question,
