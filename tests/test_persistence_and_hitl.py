@@ -13,12 +13,10 @@ Run directly:  python tests/test_persistence_and_hitl.py
 """
 
 import asyncio
-from logging import config
 import sys
 import tempfile
 from pathlib import Path
 
-# from asyncio import graph
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

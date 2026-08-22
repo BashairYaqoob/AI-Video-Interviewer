@@ -1,24 +1,23 @@
 {
   "title": "Junior AI Engineer",
-  "seniority": "0-2 years",
+  "seniority": "0-2 years experience",
   "must_have_skills": [
     "Python",
-    "LLM framework",
     "LangChain",
     "LangGraph",
-    "Retrieval-Augmented Generation (RAG)",
+    "RAG",
     "Git",
     "REST APIs"
   ],
   "nice_to_have_skills": [],
   "responsibilities": [
-    "Build and prototype practical AI-powered applications"
+    "Ship and build AI projects using LLM frameworks and RAG systems"
   ],
   "competencies": [
-    "Technical depth",
-    "Problem decomposition",
-    "Ability to ship working projects",
-    "Debugging and problem-solving ability",
-    "Communication"
+    "Python fundamentals",
+    "LLM frameworks",
+    "RAG systems",
+    "Git and REST APIs",
+    "Project delivery"
   ]
 }

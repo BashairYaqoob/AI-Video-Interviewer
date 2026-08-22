@@ -17,14 +17,7 @@
       ]
     },
     {
-      "requirement": "LangGraph",
-      "status": "matched",
-      "evidence": [
-        "github"
-      ]
-    },
-    {
-      "requirement": "Git",
+      "requirement": "RAG",
       "status": "matched",
       "evidence": [
         "github",
@@ -34,21 +27,14 @@
   ],
   "missing": [
     {
-      "requirement": "LLM framework",
+      "requirement": "Docker",
       "status": "missing",
       "evidence": []
     }
   ],
   "weak_unverified": [
     {
-      "requirement": "Retrieval-Augmented Generation (RAG)",
-      "status": "weak_unverified",
-      "evidence": [
-        "resume claim only — no supporting GitHub evidence found"
-      ]
-    },
-    {
-      "requirement": "REST APIs",
+      "requirement": "Git",
       "status": "weak_unverified",
       "evidence": [
         "resume claim only — no supporting GitHub evidence found"

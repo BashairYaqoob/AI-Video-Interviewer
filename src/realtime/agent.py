@@ -3,23 +3,21 @@ agent.py
 
 LiveKit Agent — AI Video Interviewer.
 
-Milestone 5: wires the LangGraph interview flow (question planning +
-adaptive follow-up + evidence collection) into the live Gemini realtime
-voice pipeline. Manual turn control is used so every agent utterance is
-explicitly driven by the graph's decision — Gemini never auto-replies on
-its own based on static instructions.
+Wires the LangGraph interview flow (question planning, adaptive
+follow-up, evidence collection) into the live Gemini realtime voice
+pipeline. Manual turn control means every agent utterance is explicitly
+driven by the graph's decision — Gemini never auto-replies off static
+instructions.
 
-Milestone 6: adds persistent (SQLite) checkpointing, durable thread IDs,
-HITL control hooks (pause/resume/skip/override/terminate), and
-reconnect/resume so a dropped call picks back up where it left off
-instead of restarting. Also fixes a real control-flow bug in the
-previous milestone's turn-taking (see the comment above `awaiting_answer`
-below) and keeps the background-analysis / realtime-critical-path split
-from Milestone 5 completely unchanged — Gemini answer analysis is still
-never on the turn-by-turn critical path.
+Adds: SQLite persistence, durable thread IDs, HITL controls (in-process
++ external via hitl_api.py), reconnect/resume, and a pre-interview plan
+approval gate.
 
-Requires output/jd.json, resume.json, github.json, gap_analysis.json, and
-interview_plan.json to already exist — run scripts/run_prep_pipeline.py first.
+Requires output/jd.json, resume.json, github.json, gap_analysis.json,
+interview_plan.json, and an approved interview_plan_approval.json —
+run scripts/run_prep_pipeline.py then scripts/approve_plan.py first.
+
+Run with: python -m src.realtime.agent dev  (from the repo root)
 """
 
 import asyncio
@@ -35,12 +33,19 @@ from google.genai import types
 from langgraph.types import Command
 
 from src.ingestion.schemas import JobDescription, Resume, GitHubEvidence, GapAnalysis
-from src.interview.schemas import InterviewPlan, QuestionRecord, AnswerRecord, HITLStatus
+from src.interview.schemas import (
+    InterviewPlan,
+    QuestionRecord,
+    AnswerRecord,
+    HITLStatus,
+    HITL_SKIP_SENTINEL_KEY,
+)
 from src.interview.state import InterviewState
 from src.interview.graph import build_interview_graph
 from src.interview.answer_analysis import analyze_answer, AnswerAnalysisUnavailable
 from src.interview.checkpointer import open_sqlite_checkpointer
 from src.interview.hitl import HITLController
+from src.interview.plan_approval import get_approved_questions
 
 load_dotenv()
 
@@ -48,9 +53,13 @@ logger = logging.getLogger(__name__)
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "output"
 
+POLL_INTERVAL_SECONDS = 3.0
+
 
 def _load_prep_artifacts():
-    """Loads the output of the offline prep pipeline (Milestones 3B-4B)."""
+    """Loads the output of the offline prep pipeline, and the recruiter's
+    approved (possibly edited) question list. Raises if the plan hasn't
+    been approved yet — see scripts/approve_plan.py."""
     def _load(name, model):
         path = OUTPUT_DIR / name
         if not path.exists():
@@ -64,29 +73,16 @@ def _load_prep_artifacts():
     github_evidence = _load("github.json", GitHubEvidence)
     gap_analysis = _load("gap_analysis.json", GapAnalysis)
     interview_plan = _load("interview_plan.json", InterviewPlan)
-    return jd, resume, github_evidence, gap_analysis, interview_plan
+    approved_questions = get_approved_questions(interview_plan)
+    return jd, resume, github_evidence, gap_analysis, interview_plan, approved_questions
 
 
 def _derive_thread_id(ctx: agents.JobContext, jd: JobDescription, resume: Resume) -> str:
-    """
-    Stable thread_id so a dropped/reconnected call resumes the SAME
-    interview instead of starting a fresh one at intro. Preference order:
-
-      1. An explicit interview id in job metadata, if your dispatch/
-         scheduling system sets one (e.g. `ctx.job.metadata = "<uuid>"`
-         chosen once when the interview is scheduled). This is the most
-         reliable option — it is stable no matter how many times the
-         candidate reconnects, even across different LiveKit rooms.
-      2. The LiveKit room name. LiveKit gives a rejoin to the same room
-         the same room name, so this is stable across a dropped call /
-         rejoin within a single scheduled session.
-      3. A last-resort fallback derived from candidate name + role. This
-         is the weakest option — two different interviews for the same
-         candidate/role on the same day would collide on thread_id. Only
-         reached if neither (1) nor (2) is available. Flagged again in
-         ARCHITECTURE.md: pass real job metadata in production instead of
-         relying on this.
-    """
+    """Stable thread_id so a dropped/reconnected call resumes the SAME
+    interview. Preference order: job metadata (most reliable) -> LiveKit
+    room name (stable across a rejoin) -> candidate+role hash (last
+    resort; can collide across same-day interviews — pass real job
+    metadata in production instead)."""
     metadata = (getattr(ctx.job, "metadata", "") or "").strip()
     if metadata:
         return f"interview-{metadata}"
@@ -117,7 +113,7 @@ server = AgentServer()
 
 @server.rtc_session(agent_name="ai-interviewer")
 async def ai_interviewer(ctx: agents.JobContext):
-    jd, resume, github_evidence, gap_analysis, interview_plan = _load_prep_artifacts()
+    jd, resume, github_evidence, gap_analysis, interview_plan, approved_questions = _load_prep_artifacts()
 
     initial_state = InterviewState(
         candidate_name=resume.candidate_name,
@@ -126,55 +122,32 @@ async def ai_interviewer(ctx: agents.JobContext):
         resume=resume,
         github_evidence=github_evidence,
         gap_analysis=gap_analysis,
-        interview_plan=interview_plan.questions,
+        interview_plan=approved_questions,
     )
 
     thread_id = _derive_thread_id(ctx, jd, resume)
     config = {"configurable": {"thread_id": thread_id}}
     logger.info("interview thread_id=%s", thread_id)
 
-    # Explicit, single-purpose control-flow flags, MUTATED IN PLACE only
-    # (never reassigned) so every closure below always observes the
-    # current value.
-    #
-    # BUGFIX (Milestone 6): the previous version of this file had
-    #   awaiting_answer = {"value": False}
-    #   processing_answer = {"value": False}
-    # lines *inside* _advance_and_ask, near the end of the function. In
-    # Python, that assignment makes both names LOCAL to _advance_and_ask
-    # for the entire function body (a well-known closure gotcha), which
-    # shadowed the outer dicts that _on_user_transcript reads. Combined
-    # with there being no `awaiting_answer["value"] = True` anywhere,
-    # this meant _on_user_transcript's `if not awaiting_answer["value"]:
-    # return` was effectively always true — candidate transcripts could
-    # be silently ignored. Fixed by declaring these once here, only ever
-    # mutating `["value"]` (never rebinding the name) anywhere below, and
-    # explicitly setting awaiting_answer["value"] = True right after a
-    # question is actually asked (see _speak_question).
+    # Mutated in place only (never reassigned) so every closure below
+    # always observes the current value.
     awaiting_answer = {"value": False}
     processing_answer = {"value": False}
 
-    # In-process mirror of HITL pause state, so the SYNCHRONOUS
-    # `user_input_transcribed` event handler (LiveKit callbacks are not
-    # awaitable) can cheaply check "are we paused?" without an async
-    # round-trip to the checkpointer on every transcript. Kept in sync by
-    # handle_pause/handle_resume below. LIMITATION: if something other
-    # than this process's own handle_pause/handle_resume mutates
-    # hitl_status directly against the SQLite file (e.g. a future MCP
-    # tool running in a separate process), this mirror will be stale
-    # until the next handle_pause/handle_resume call in THIS process —
-    # see ARCHITECTURE.md.
+    # In-process mirror of HITL pause state for the synchronous
+    # user_input_transcribed handler. Can go briefly stale if hitl_status
+    # changes via hitl_api.py — the poll loop below reconciles it.
     hitl_mirror = {"paused": False}
 
-    # Serializes ALL writers to this interview's checkpointed state: the
-    # main graph-advancing flow, background evidence analysis, and HITL
-    # actions. Coarse-grained on purpose — turn-taking in a live
-    # interview is inherently sequential, so the only realistic
-    # contention is background analysis of a PREVIOUS turn overlapping
-    # with the graph advancing to the NEXT turn or a HITL action; a
-    # single lock makes that race impossible rather than merely unlikely.
-    # See ARCHITECTURE.md for the finer-grained alternative considered
-    # and why it wasn't worth the complexity here.
+    # How many hitl_actions_log entries this process has already reacted
+    # to, so the poll loop only acts on genuinely new ones (its own or
+    # an external process's). Guarded by mirror_lock.
+    processed_actions_count = {"value": 0}
+    mirror_lock = asyncio.Lock()
+
+    # Serializes every writer to this interview's state: graph
+    # advancement, background evidence analysis, and HITL actions.
+    # Coarse-grained on purpose — see ARCHITECTURE.md.
     state_lock = asyncio.Lock()
 
     async with open_sqlite_checkpointer() as checkpointer:
@@ -187,22 +160,14 @@ async def ai_interviewer(ctx: agents.JobContext):
         def _as_answer_record(value) -> AnswerRecord:
             return value if isinstance(value, AnswerRecord) else AnswerRecord(**value)
 
-        async def _analyze_answer_background(question: QuestionRecord, answer: AnswerRecord) -> None:
-            """
-            Runs Gemini-based answer analysis OFF the realtime critical
-            path. Unchanged from Milestone 5 except that persisting the
-            result now goes through native async checkpoint calls
-            (aget_state/aupdate_state against AsyncSqliteSaver) instead
-            of asyncio.to_thread-wrapped sync ones — analyze_answer()
-            itself is still a synchronous Gemini call, so IT still runs
-            in a worker thread; only the state I/O around it changed.
+        def _field(record, name):
+            return record[name] if isinstance(record, dict) else getattr(record, name)
 
-            Must never block or crash the live interview: always runs in
-            a worker thread, and any failure (503/429/timeout, or
-            anything else) is logged and swallowed here rather than
-            propagated. Worst case, that turn is simply missing from the
-            final evidence report.
-            """
+        async def _analyze_answer_background(question: QuestionRecord, answer: AnswerRecord) -> None:
+            """Runs Gemini answer analysis off the realtime critical path.
+            Never blocks or crashes the live interview — failures are
+            logged and swallowed; worst case that turn is missing from
+            the final evidence report."""
             try:
                 evidence = await asyncio.to_thread(
                     analyze_answer, question, answer, jd, resume, github_evidence
@@ -251,6 +216,12 @@ async def ai_interviewer(ctx: agents.JobContext):
             last_question = values["questions_asked"][-1]
             return last_question["text"] if isinstance(last_question, dict) else last_question.text
 
+        # Keeps the checkpointer's `async with` block (and its SQLite
+        # connection) open for the interview's real lifetime — the
+        # interview is actually driven by the event handler below, not
+        # by this function's own control flow after this point.
+        interview_done = asyncio.Event()
+
         async def _finish_interview():
             await session.generate_reply(
                 instructions=(
@@ -259,6 +230,12 @@ async def ai_interviewer(ctx: agents.JobContext):
                 )
             )
             awaiting_answer["value"] = False
+            interview_done.set()
+
+        # Safety net: candidate just leaves without a natural finish.
+        @ctx.room.on("participant_disconnected")
+        def _on_participant_disconnected(*args, **kwargs):
+            interview_done.set()
 
         async def _speak_question(values: dict, *, first_question: bool, reconnect: bool):
             question_text = _current_question_text(values)
@@ -289,18 +266,9 @@ async def ai_interviewer(ctx: agents.JobContext):
             awaiting_answer["value"] = True
 
         async def _advance_and_ask(resume_value):
-            """
-            Drives the graph forward exactly one step — either the very
-            first invoke (resume_value=None) or resuming the current
-            receive_answer interrupt with a candidate transcript or a
-            HITL skip sentinel — then either speaks the next question or
-            wraps up if the interview is now complete/terminated.
-
-            All graph reads/writes for this step happen under
-            state_lock, as a single unit, so a concurrent background
-            evidence write or HITL action can't interleave with this
-            step's own read-modify-write of state.
-            """
+            """Steps the graph forward one turn, then speaks the next
+            question or wraps up. All reads/writes happen under
+            state_lock as a single unit."""
             async with state_lock:
                 if resume_value is None:
                     await graph.ainvoke(initial_state.model_dump(), config=config)
@@ -314,10 +282,8 @@ async def ai_interviewer(ctx: agents.JobContext):
                     answered_answer = _as_answer_record(post_values["candidate_answers"][-1])
 
                     if not answered_answer.skipped:
-                        # Background only — NEVER await this, and never
-                        # start it while still holding state_lock (it
-                        # acquires the same lock itself when it later
-                        # persists evidence).
+                        # Background only — never awaited, never started
+                        # while holding state_lock (it acquires it itself).
                         asyncio.create_task(
                             _analyze_answer_background(answered_question, answered_answer)
                         )
@@ -330,37 +296,100 @@ async def ai_interviewer(ctx: agents.JobContext):
 
             await _speak_question(values, first_question=(resume_value is None), reconnect=False)
 
-        # --- HITL control hooks -------------------------------------------------
-        # These are the integration points a control channel (an MCP tool,
-        # a small admin endpoint, a CLI — deliberately not decided here,
-        # see ARCHITECTURE.md) would call into. Wiring an actual
-        # out-of-process transport to these is out of scope for this
-        # milestone; what's implemented is the state machine + these
-        # in-process hooks, ready to be exposed however you choose next.
+        # --- In-process HITL hooks -----------------------------------
+        # Integration points for any control channel (external API,
+        # future MCP tool, etc.) that runs inside this process.
 
         async def handle_pause(actor: str = "recruiter", note: str = "") -> None:
             await hitl.pause(actor=actor, note=note)
             hitl_mirror["paused"] = True
-            awaiting_answer["value"] = False  # don't process a turn that arrives after pause
+            awaiting_answer["value"] = False
+            async with mirror_lock:
+                processed_actions_count["value"] += 1
 
         async def handle_resume(actor: str = "recruiter", note: str = "") -> None:
             await hitl.resume(actor=actor, note=note)
             hitl_mirror["paused"] = False
+            async with mirror_lock:
+                processed_actions_count["value"] += 1
 
         async def handle_skip(actor: str = "recruiter", note: str = "") -> None:
             sentinel = await hitl.skip_current_question(actor=actor, note=note)
+            async with mirror_lock:
+                processed_actions_count["value"] += 1
             await _advance_and_ask(resume_value=sentinel)
 
         async def handle_override_question(
             question: QuestionRecord, actor: str = "recruiter", note: str = ""
         ) -> None:
             await hitl.override_next_question(question, actor=actor, note=note)
+            async with mirror_lock:
+                processed_actions_count["value"] += 1
 
         async def handle_terminate(actor: str = "recruiter", note: str = "") -> None:
             await hitl.terminate(actor=actor, note=note)
+            async with mirror_lock:
+                processed_actions_count["value"] += 1
             await _finish_interview()
 
-        # --------------------------------------------------------------------
+        # --- External HITL polling ------------------------------------
+        # hitl_api.py runs as a SEPARATE process and only ever writes
+        # durable state — it can't push into this running agent. This
+        # loop notices actions it didn't originate itself (e.g. from
+        # hitl_api.py) and reacts, so an external terminate/pause/skip
+        # is still caught promptly even while silently awaiting a turn.
+        # Skip is guarded against racing a real candidate answer.
+
+        async def _external_hitl_poll_loop():
+            while not interview_done.is_set():
+                try:
+                    await asyncio.wait_for(interview_done.wait(), timeout=POLL_INTERVAL_SECONDS)
+                    break
+                except asyncio.TimeoutError:
+                    pass
+
+                async with state_lock:
+                    values = (await graph.aget_state(config)).values
+                    log = values.get("hitl_actions_log", [])
+
+                async with mirror_lock:
+                    already_processed = processed_actions_count["value"]
+                new_entries = log[already_processed:]
+
+                for entry in new_entries:
+                    action = _field(entry, "action")
+
+                    if action == "terminate":
+                        if not interview_done.is_set():
+                            logger.info("external HITL terminate detected, ending interview")
+                            await _finish_interview()
+
+                    elif action == "pause":
+                        hitl_mirror["paused"] = True
+                        awaiting_answer["value"] = False
+
+                    elif action == "resume":
+                        hitl_mirror["paused"] = False
+
+                    elif action == "skip":
+                        if awaiting_answer["value"] and not processing_answer["value"]:
+                            logger.info("external HITL skip detected, advancing")
+                            awaiting_answer["value"] = False
+                            processing_answer["value"] = True
+                            try:
+                                await _advance_and_ask(resume_value={HITL_SKIP_SENTINEL_KEY: True})
+                            finally:
+                                processing_answer["value"] = False
+                        else:
+                            logger.info("external HITL skip detected but no turn in flight; ignoring")
+
+                    # override_question needs no proactive action — read
+                    # naturally the next time ask_question_node runs.
+
+                async with mirror_lock:
+                    processed_actions_count["value"] = len(log)
+
+        # ----------------------------------------------------------------
 
         @session.on("user_input_transcribed")
         def _on_user_transcript(ev):
@@ -371,10 +400,7 @@ async def ai_interviewer(ctx: agents.JobContext):
             if processing_answer["value"]:
                 return
             if hitl_mirror["paused"]:
-                # Candidate transcripts that arrive while paused are
-                # intentionally dropped rather than advancing the
-                # interview. There is currently no buffering/replay of a
-                # dropped transcript on resume — see ARCHITECTURE.md.
+                # Dropped, not buffered — see ARCHITECTURE.md.
                 logger.info("dropping transcript while HITL paused")
                 return
 
@@ -391,19 +417,16 @@ async def ai_interviewer(ctx: agents.JobContext):
 
             asyncio.create_task(process_answer())
 
-        # START LIVEKIT SESSION
         await session.start(
             agent=Interviewer(resume.candidate_name),
             room=ctx.room,
         )
 
         # RESUME / RECOVERY: check for existing checkpointed state under
-        # this thread_id BEFORE starting fresh. If found, this is a
-        # reconnect (or a retry of a job that crashed mid-interview) —
-        # re-synchronize local flags and re-prompt instead of restarting
-        # from intro (which would re-run intro/ask_question and duplicate
-        # state).
+        # this thread_id before starting fresh — a reconnect re-prompts
+        # instead of restarting from intro.
         existing = await graph.aget_state(config)
+        processed_actions_count["value"] = len(existing.values.get("hitl_actions_log", []))
 
         if not existing.values:
             await _advance_and_ask(resume_value=None)
@@ -420,6 +443,9 @@ async def ai_interviewer(ctx: agents.JobContext):
             )
         else:
             await _speak_question(existing.values, first_question=False, reconnect=True)
+
+        asyncio.create_task(_external_hitl_poll_loop())
+        await interview_done.wait()
 
 
 if __name__ == "__main__":

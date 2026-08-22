@@ -69,3 +69,26 @@ class HITLActionRecord(BaseModel):
 # answer. Shared between nodes.py (consumer) and hitl.py (producer) so
 # there is exactly one definition of what a "skip" resume value looks like.
 HITL_SKIP_SENTINEL_KEY = "__hitl_skip__"
+
+class PlanApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class PlanApprovalRecord(BaseModel):
+    """Durable record of the recruiter's approve/edit/reject decision on
+    the generated interview_plan.json, BEFORE any live interview may
+    start. Kept separate from InterviewPlan itself (rather than adding
+    fields to it) because InterviewPlan is Gemini's structured-output
+    schema in question_planner.py — mixing approval bookkeeping into it
+    would leak into the LLM response schema.
+    """
+    status: PlanApprovalStatus = PlanApprovalStatus.PENDING
+    actor: str = "recruiter"
+    timestamp: float = 0.0
+    note: str = ""
+    # If the recruiter edited the plan, the FINAL question list to use
+    # for the interview. If None, the original interview_plan.json
+    # questions are used unchanged.
+    approved_questions: List[QuestionRecord] | None = None

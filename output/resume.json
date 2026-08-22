@@ -1,97 +1,44 @@
 {
-  "candidate_name": "Bashair Yaqoob",
+  "candidate_name": "Jane Candidate",
   "education": [
-    "Bachelor's / Undergraduate Studies in Computer Science"
+    "Computer Science student, FAST NUCES"
   ],
-  "experience": [
-    {
-      "role": "Junior AI / Software Engineer Candidate",
-      "organization": "",
-      "description": "Computer Science student and software development enthusiast with hands-on experience building web applications, AI-powered projects, and programming projects."
-    }
-  ],
+  "experience": [],
   "skills": [
-    "Python",
-    "JavaScript",
-    "TypeScript",
-    "C++",
-    "C",
     "LangChain",
-    "Retrieval-Augmented Generation (RAG)",
-    "LLM application development",
-    "AI chatbots",
-    "Prompt engineering",
-    "Embeddings and retrieval concepts",
-    "HTML",
-    "CSS",
-    "React fundamentals",
-    "REST APIs",
-    "Git",
-    "GitHub",
-    "Jupyter Notebook",
-    "VS Code"
+    "ChromaDB",
+    "Groq",
+    "Playwright",
+    "Streamlit"
   ],
   "projects": [
     {
-      "name": "AI-Project---MindHaven",
-      "description": "Built a mental health-focused web application with an AI chatbot, implemented features for journaling, mood logging, and personal reflection.",
+      "name": "RAG chatbot",
+      "description": "Built a RAG chatbot",
       "technologies": [
-        "TypeScript",
-        "AI"
-      ]
-    },
-    {
-      "name": "Whatsapp-Langchain-Bot",
-      "description": "Built a functional WhatsApp bot integrating Baileys and LangChain, implemented a Retrieval-Augmented Generation workflow.",
-      "technologies": [
-        "JavaScript",
         "LangChain",
-        "Baileys"
+        "ChromaDB",
+        "Groq"
       ]
     },
     {
-      "name": "Lead-Generation-Agent",
-      "description": "Built a lead-generation agent using Python, implemented browser automation for collecting information and added Excel export functionality.",
+      "name": "AI lead generation agent",
+      "description": "Built an AI lead generation agent",
       "technologies": [
-        "Python"
-      ]
-    },
-    {
-      "name": "AI",
-      "description": "Maintained a collection of AI laboratory work and learning projects using Jupyter Notebooks.",
-      "technologies": [
-        "Jupyter Notebook"
-      ]
-    },
-    {
-      "name": "Pacman-Game",
-      "description": "Built a Pacman game as an object-oriented programming project.",
-      "technologies": [
-        "C++"
+        "Playwright",
+        "Streamlit"
       ]
     }
   ],
-  "github_url": "https://github.com/BashairYaqoob",
+  "github_url": "https://github.com/example-candidate",
   "claims": [
     {
-      "claim": "Built a mental health-focused web application with an AI chatbot",
-      "evidence": "AI-Project---MindHaven"
+      "claim": "Built a RAG chatbot using LangChain, ChromaDB, and Groq",
+      "evidence": "Built a RAG chatbot using LangChain, ChromaDB, and Groq."
     },
     {
-      "claim": "Built a functional WhatsApp bot integrating Baileys and LangChain",
-      "evidence": "Whatsapp-Langchain-Bot"
-    },
-    {
-      "claim": "Implemented a Retrieval-Augmented Generation workflow",
-      "evidence": "Whatsapp-Langchain-Bot"
-    },
-    {
-      "claim": "Built a lead-generation agent using Python",
-      "evidence": "Lead-Generation-Agent"
-    },
-    {
-      "claim": "Built a Pacman game as an object-oriented programming project",
-      "evidence": "Pacman-Game"
+      "claim": "Built an AI lead generation agent using Playwright and Streamlit",
+      "evidence": "Built an AI lead generation agent using Playwright and Streamlit."
     }
   ]
 }

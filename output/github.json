@@ -1,64 +1,18 @@
 {
-  "username": "BashairYaqoob",
-  "profile_url": "https://github.com/BashairYaqoob",
+  "username": "example-candidate",
+  "profile_url": "https://github.com/example-candidate",
   "repositories": [
     {
-      "name": "AI-Video-Interviewer",
-      "description": "An AI that joins a live video call , appears as a person, and conducts a real job interview — grounded in the candidate's actual resume, the actualjob description, and their actual GitHub code — then produces a hiring scorecard it can defend with evidence. ",
+      "name": "rag-chatbot",
+      "description": "A RAG chatbot",
       "languages": [
         "Python",
         "HTML"
       ],
-      "readme_excerpt": "# AI Video Interviewer\n\nAn AI-powered live video interviewer that conducts evidence-grounded\ntechnical interviews using a candidate's job description, resume, and\nGitHub projects.\n\n## Current Status\n\n🚧 Hackathon build in progress.\n\nThe realtime foundation is now working:\n\n**LiveKit Agent → Gemini Realtime → conversational interview**\n\nThe next milestone is connecting a browser candidate to the LiveKit room.\n\n---\n\n## Completed\n\n- [x] Project structure initialized\n- [x] Python virtual environment configured\n- [x] Dependencies captured in `requirements.txt`\n- [x] `.gitignore` configured to protect secrets\n- [x] Gemini API connection verified\n- [x] Gemini Live API connection verified\n- [x] Gemini Live streamed audio successfully\n- [x] Gemini Live input transcription tested\n- [x] Gemini Live output transcription tested\n- [x] Gemini Live interruption events tested\n- [x] LiveKit CLI installed\n- [x] LiveKit Cloud project created\n- [x] LiveKit CLI authenticated\n- [x] LiveKit credentials verifie",
-      "stars": 0,
-      "last_updated": "2026-08-14T09:05:29Z",
-      "url": "https://github.com/BashairYaqoob/AI-Video-Interviewer"
-    },
-    {
-      "name": "CarWash_Voice_Agent",
-      "description": "Two AI-powered conversational booking agents for a car wash service. One operate through WhatsApp using VAPI, allowing users to book car wash appointments through a conversational interface. The second agent should be a voice-calling booking agent built using Uplift AI Voice. Both agents collect basic booking information.",
-      "languages": [
-        "Python"
-      ],
-      "readme_excerpt": "# AI Car Wash Booking Agents — Backend\n\n## 1. Project overview\n\nA shared FastAPI backend that powers two independent AI conversational\nbooking agents for a car wash service — one voice agent on **Vapi**, and a\nsecond voice agent planned on **Uplift AI**. Both agents (by design) talk to\nthe *same* backend, the *same* booking/validation logic, and the *same* JSON\nstorage, so there is one single source of truth for what a valid booking is,\nno matter which conversational front-end collected it.\n\n**Status at a glance:**\n\n| Component                          | Status |\n|-------------------------------------|--------|\n| FastAPI backend (booking logic + JSON storage) | ✅ Completed |\n| Vapi conversational agent (voice)   | ✅ Completed & tested end-to-end |\n| `submit_booking` custom tool (Vapi) | ✅ Completed & tested |\n| Vapi → FastAPI → JSON integration   | ✅ Completed & tested |\n| ngrok public tunnel for local dev   | ✅ Working |\n| Uplift AI Voice agent               | 🔲 Not built yet |\n| Upli",
-      "stars": 0,
-      "last_updated": "2026-08-08T21:05:54Z",
-      "url": "https://github.com/BashairYaqoob/CarWash_Voice_Agent"
-    },
-    {
-      "name": "AI-Season",
-      "description": "Learning Agentic AI from scratch - building real AI agents with LangChain, LangGraph & RAG. ",
-      "languages": [
-        "Python",
-        "HTML",
-        "TypeScript"
-      ],
-      "readme_excerpt": "# AI-Season\nLearning Agentic AI from scratch - building real AI agents with LangChain, LangGraph &amp; RAG. \n",
-      "stars": 0,
-      "last_updated": "2026-07-31T19:48:42Z",
-      "url": "https://github.com/BashairYaqoob/AI-Season"
-    },
-    {
-      "name": "Lead-Generation-Agent",
-      "description": "Lead Generation Agent with Browser Automation and Excel Export ",
-      "languages": [
-        "Python"
-      ],
-      "readme_excerpt": "# AI Lead Generation Agent\n\nAn AI-powered agent that accepts a natural language prompt (e.g. *\"Find coffee\nshops in Karachi\"*), extracts the business category and location, uses\nbrowser automation to search Google Maps, scrapes business details,\ndiscovers contact emails, and exports everything to a formatted Excel file.\n\n## Architecture\n```\nUser Prompt\n|\nv\nPromptParser ----> SearchQuery(business_type, location)\n|\nv\nBrowserAgent (Playwright/Chromium)\n| launch -> search -> collect_businesses -> open_result (with retries)\nv\nBusinessScraper\n| scrape Google Maps fields -> visit website -> extract_email (with retries)\nv\nlist[Lead]\n|\nv\nExcelExporter ----> output/leads_<business_type>.xlsx\n|\nv\nRunResult (stats) ----> console summary\n```\n## Features\n\n- **Natural language prompt parsing** — extracts business type and location.\n- **Browser automation** — Playwright-driven Chromium, headless or visible.\n- **Google Maps search** — scrolls the results feed to collect multiple\n  businesses per run.\n-",
-      "stars": 0,
-      "last_updated": "2026-07-26T19:00:30Z",
-      "url": "https://github.com/BashairYaqoob/Lead-Generation-Agent"
-    },
-    {
-      "name": "Whatsapp-Langchain-Bot",
-      "description": "A functional WhatsApp bot that integrates Baileys and LangChain, implements RAG, and correctly extracts and persists personal information. ",
-      "languages": [
-        "JavaScript"
-      ],
-      "readme_excerpt": "# Bashair AI — WhatsApp Bot\n\nAn AI-powered WhatsApp assistant built with LangChain, Groq (openai/gpt-oss-120b), RAG over a local Chroma vector store, and persistent per-user memory — connected to WhatsApp via Baileys.Baileys links to WhatsApp the same way WhatsApp Web does — scan a QR code once, no official business API or paid account needed\n\nThe bot answers questions about Bashair Yaqoob using a knowledge base (RAG), while also remembering personal facts about whoever it's chatting with across conversations.\n\n\n## Features\n\n- 💬 **WhatsApp integration** via Baileys (no official WhatsApp Business API needed)\n- 📚 **RAG (Retrieval-Augmented Generation)** — answers grounded in a local knowledge base, embedded and stored in Chroma\n- 🧠 **Persistent user memory** — automatically extracts and remembers personal facts mentioned in conversation (name, city, favorites, etc.), stored per WhatsApp number\n- 🗨️ **Session-based conversation history** — keeps recent chat context per user for natural fo",
-      "stars": 0,
-      "last_updated": "2026-07-19T19:45:02Z",
-      "url": "https://github.com/BashairYaqoob/Whatsapp-Langchain-Bot"
+      "readme_excerpt": "# RAG Chatbot\nBuilt with LangChain and ChromaDB.",
+      "stars": 3,
+      "last_updated": "2026-01-01T00:00:00Z",
+      "url": "https://github.com/example-candidate/rag-chatbot"
     }
   ]
 }

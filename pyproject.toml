@@ -8,3 +8,6 @@ dependencies = [
     "livekit-plugins-google==1.6.10",
     "python-dotenv",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
